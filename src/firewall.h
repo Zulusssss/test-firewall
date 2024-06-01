@@ -1,22 +1,27 @@
 #ifndef FIREWALL_H
 #define FIREWALL_H
 
-struct Packet {
-    char src_ip[16];
-    char dst_ip[16];
-    unsigned short src_port;
-    unsigned short dst_port;
-    unsigned char protocol; // 6 for TCP, 17 for UDP
-};
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-struct Rule {
-    char src_ip[16];
-    char dst_ip[16];
-    unsigned char protocol; // 6 for TCP, 17 for UDP, 0 for any
-    char action[7]; // "ACCEPT" or "DROP"
-};
+#define MAX_RULES 100
+#define MAX_IP_LENGTH 16
+#define MAX_ACTION_LENGTH 10
 
-int parse_packet(const char *line, struct Packet *packet);
-const char* process_packet(const struct Packet *packet);
+typedef struct {
+    char src_ip[MAX_IP_LENGTH];
+    char dst_ip[MAX_IP_LENGTH];
+    char protocol[10];
+    char action[MAX_ACTION_LENGTH];
+} FirewallRule;
+
+extern FirewallRule rules[MAX_RULES];
+extern int rule_count;
+
+void load_rules_from_file(const char *filename);
+int ip_match(const char *ip, const char *rule_ip);
+int is_ip_in_cidr(const char *ip, const char *cidr);
+int is_valid_ip(const char *ip);
 
 #endif // FIREWALL_H

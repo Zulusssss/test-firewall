@@ -1,21 +1,47 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "firewall.h"
 
-#define BUFFER_SIZE 1024
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <rules_file>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-int main() {
-    char buffer[BUFFER_SIZE];
-    struct Packet packet;
+    load_rules_from_file(argv[1]);
 
-    while (fgets(buffer, BUFFER_SIZE, stdin)) {
-        if (parse_packet(buffer, &packet) == 5) {
-            printf("%s\n", process_packet(&packet));
+    char packet[128];
+    while (fgets(packet, sizeof(packet), stdin)) {
+        char src_ip[MAX_IP_LENGTH], dst_ip[MAX_IP_LENGTH];
+        int src_port, dst_port, protocol;
+        sscanf(packet, "%s %s %d %d %d", src_ip, dst_ip, &src_port, &dst_port, &protocol);
+
+        if (!is_valid_ip(src_ip) || !is_valid_ip(dst_ip)) {
+            printf("DROP\n");
+            continue;
+        }
+
+        int accepted = 0;
+        for (int i = 0; i < rule_count; i++) {
+            FirewallRule rule = rules[i];
+            if (ip_match(src_ip, rule.src_ip) &&
+                ip_match(dst_ip, rule.dst_ip) &&
+                (strcmp(rule.protocol, "any") == 0 ||
+                 (strcmp(rule.protocol, "tcp") == 0 && protocol == 6) ||
+                 (strcmp(rule.protocol, "udp") == 0 && protocol == 17))) {
+                if (strcmp(rule.action, "ACCEPT") == 0) {
+                    accepted = 1;
+                } else {
+                    accepted = 0;
+                }
+                break;
+            }
+        }
+
+        if (accepted) {
+            printf("ACCEPT\n");
         } else {
-            fprintf(stderr, "Error parsing packet: %s", buffer);
+            printf("DROP\n");
         }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
