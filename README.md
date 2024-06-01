@@ -11,7 +11,7 @@
 
 Инструкция по сборке:
 - git clone <repository_url>
-- cd firewall
+- cd test-firewall
 - make
 
 Инструкция по тестовому запуску:
